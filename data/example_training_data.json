@@ -1,0 +1,10 @@
+{
+  "system_prompt": "you're system prompt.",
+  "schema": "Business logic schema if it exists.",
+  "user_assistant_messages": [
+    {
+      "user": "user request",
+      "assistant": "expected assistant response"
+    }
+  ]
+}

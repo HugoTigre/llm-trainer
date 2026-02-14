@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# Model files and checkpoints
+*.bin
+*.safetensors
+*.gguf
+*.pt
+*.pth
+output/
+checkpoints/
+models/
+
+# Jupyter
+.ipynb_checkpoints
+*.ipynb
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Other
+data/training_data.json
+# Prepared train/val JSONL per run (data/<run_id>/)
+data/*/

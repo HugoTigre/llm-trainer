@@ -1,0 +1,68 @@
+
+# Default configuration for training and evaluation.
+# Paths are relative to the project root. Override by passing --config path/to/other.yaml
+# when running scripts.
+
+# Run identifier: all outputs for this run go under output/<run_id>/
+# Use different run_id values to keep separate runs (e.g. "mistral-7b-v1", "llama-3b-experiment").
+run_id: "test-run"
+
+# Hugging Face model ID (causal LM with chat template).
+# model_id: "mistralai/Mistral-7B-Instruct-v0.2"
+model_id: "Qwen/Qwen2.5-3B-Instruct"
+
+# Quantization for loading the base model: 4 (default), 8, or null for full precision.
+# Used by training and by baseline/finetuned eval. Lower bits = less memory, more quantization error.
+quantization_bits: 4
+
+# Training and validation data. By default they live under data/<run_id>/.
+# Uncomment and set paths to override, e.g. use a shared train/val for all runs.
+# data:
+#   train: "data/train.jsonl"
+#   val: "data/val.jsonl"
+
+# LoRA adapter config.
+## Quick reference:
+## More capacity / more fit: increase r (e.g. 32), or add epochs.
+## Overfitting: lower alpha, add dropout, or reduce epochs.
+lora:
+  r: 16 # Rank of the LoRA matrices: the size of the small dimension in the low-rank update. Bigger r → more LoRA parameters → larger adapter and more capacity. Bit-width (e.g. 16-bit) is separate and usually fixed by the training setup. So: r = size/capacity of the adapter (number of parameters).
+  alpha: 32 # Scales how strongly the LoRA affects the model output. Typically the LoRA update is scaled by alpha / r, so for the same r, a larger alpha means a stronger influence of the adapter on the base model.
+  target_modules: ["q_proj", "k_proj", "v_proj", "o_proj"] # The model layers we attach LoRA to (the only parts that get new trainable parameters).
+  dropout: 0.05 # Dropout rate for the LoRA matrices. Dropout is for regularization during training: we randomly zero some activations inside the LoRA layers so the adapter doesn’t overfit (memorize) the training set and generalizes better. So it reduces overfitting
+
+# Training hyperparameters.
+## Quick reference:
+## Out of memory: lower max_seq_length and/or batch_size (or raise gradient_accumulation_steps to keep effective batch size).
+## Faster training: fewer epochs or higher learning_rate (within the 1e-5–3e-5 range for LoRA).
+training:
+  # Path to the training data JSON (system_prompt, schema, user_assistant_messages). Used by prepare_data and eval.
+  training_data_file: data/training_data.json
+  # Max tokens per example (input + output). Longer examples are truncated from the end. Larger → more memory (especially attention). Lower (e.g. 1024) if you hit OOM.
+  max_seq_length: 2048
+  # Examples per step. How many training examples we process in a single forward pass before we do one optimizer step. 1 keeps memory low (typical for 7B params on 32 GB).
+  # example: 
+  ## size = 1: we take 1 example → forward → loss → backward → update weights.
+  ## size = 4: we’d take 4 examples at once, forward on all 4, average their loss, one backward, one update
+  # Larger batch uses more memory (we store activations for all those examples). We use batch_size = 1 to save memory and then use gradient_accumulation_steps (e.g. 4) to run 4 such steps and then update, so the effective batch size is 1×4 = 4 without ever putting 4 examples in memory at once.
+  # So: batch_size = number of examples per optimizer step (per update); we keep it 1 and simulate a bigger batch with gradient_accumulation_steps.
+  batch_size: 1
+  # Steps before doing an optimizer update. Effective batch size = batch_size × this = 1×4 = 4. So you update weights as if each update saw 4 examples, without storing 4 full forward passes in memory.
+  # Effect: Same training behavior as batch_size=4 (for that step), with lower peak memory than a real batch of 4.
+  gradient_accumulation_steps: 4
+  # Set to true to trade compute for memory (recomputes activations in backward). Slower training, less RAM. Useful for larger models.
+  gradient_checkpointing: true
+  # Passes over the full training set. 1–3 is common for small datasets.
+  num_epochs: 2
+  # Step size for weight updates (2×10ˆ-5). Standard range for LoRA is about 1e-5 to 3e-5. Lower = more stable, slower; higher = faster but can be unstable.
+  learning_rate: 2.0e-5
+  # Checkpoint the run every 50 optimizer steps (saved under output/<run_id>/). Lets you resume or pick a later checkpoint.
+  save_steps: 50
+  # Warmup: for the first 3% of steps, the learning rate goes from 0 up to learning_rate. Reduces instability at the start of training.
+  warmup_ratio: 0.03
+
+# Evaluation: number of examples to run for baseline and finetuned eval.
+eval:
+  max_examples: 5
+  # Finetuned eval only: set to false to use system_prompt without schema (from training_data.json).
+  include_schema_in_eval: true

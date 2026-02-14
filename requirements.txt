@@ -1,0 +1,28 @@
+# Python dependencies for LLM training (Hugging Face stack)
+# Install with: pip install -r requirements.txt
+# (Run from project root with your venv activated.)
+
+# Core: Hugging Face Transformers (load models, tokenizers)
+transformers>=4.36.0
+
+# Parameter-Efficient Fine-Tuning: LoRA/QLoRA adapters
+peft>=0.7.0
+
+# Datasets: load JSONL and build training datasets
+datasets>=2.16.0
+
+# Accelerate: training utilities and device placement (CPU/MPS/CUDA)
+accelerate>=0.25.0
+
+# PyTorch: tensor library (install separately on Mac M1 if needed – see README)
+# On Mac, PyTorch with MPS is usually: pip install torch (from PyTorch site)
+torch>=2.1.0
+
+# 4-bit quantization for QLoRA
+bitsandbytes>=0.41.0
+
+# Tokenizers (often bundled with transformers; explicit for clarity)
+tokenizers>=0.15.0
+
+# Config: YAML
+pyyaml>=6.0
