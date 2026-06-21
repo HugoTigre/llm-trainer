@@ -35,7 +35,7 @@ def load_config(config_path: str | Path | None = None) -> dict:
     training_data_path = PROJECT_ROOT / training_data_file
     out = {
         "run_id": run_id,
-        "model_id": raw.get("model_id", "Qwen/Qwen2.5-3B-Instruct"),
+        "model_id": raw.get("model_id", "Qwen/Qwen2.5-0.5B-Instruct"),
         "quantization_bits": raw.get("quantization_bits", 4),  # 4, 8, or None for full precision
         "data": {
             "train_path": PROJECT_ROOT / train_rel,
@@ -52,6 +52,7 @@ def load_config(config_path: str | Path | None = None) -> dict:
         },
         "training": {
             "training_data_file": training_data_file,
+            "include_schema_in_training": raw.get("training", {}).get("include_schema_in_training", True),
             "max_seq_length": raw.get("training", {}).get("max_seq_length", 1536),
             "batch_size": raw.get("training", {}).get("batch_size", 1),
             "gradient_accumulation_steps": raw.get("training", {}).get(
@@ -67,7 +68,15 @@ def load_config(config_path: str | Path | None = None) -> dict:
             "max_examples": raw.get("eval", {}).get("max_examples", 5),
             "include_schema_in_eval": raw.get("eval", {}).get("include_schema_in_eval", True),
         },
+        "rl": {
+            "steps": raw.get("rl", {}).get("steps", 100),
+            "batch_size": raw.get("rl", {}).get("batch_size", 4),
+            "max_new_tokens": raw.get("rl", {}).get("max_new_tokens", 128),
+            "learning_rate": raw.get("rl", {}).get("learning_rate", 1.0e-5),
+            "save_steps": raw.get("rl", {}).get("save_steps", 50),
+        },
         "adapter_dir": PROJECT_ROOT / "output" / run_id / "adapter",
+        "adapter_rl_dir": PROJECT_ROOT / "output" / run_id / "adapter_rl",
         "output_dir": PROJECT_ROOT / "output" / run_id,
     }
     return out

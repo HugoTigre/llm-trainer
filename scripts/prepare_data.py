@@ -32,13 +32,14 @@ DEFAULT_RAW_PATH = PROJECT_ROOT / "data" / "training_data.json"
 # Fraction of examples to use for validation (e.g. 0.1 = 10%)
 VAL_RATIO = 0.1
 # Seed so the split is reproducible
-RANDOM_SEED = 42
+RANDOM_SEED = 42 
 
 
-def load_raw_examples(path: Path) -> list[dict]:
+def load_raw_examples(path: Path, include_schema: bool) -> list[dict]:
     """
     Load from a single JSON: system_prompt, optional schema, user_assistant_messages.
-    Schema (if present) is appended to system_prompt so each example gets full system content.
+    Schema (if present) can be appended to system_prompt so each example gets full system content,
+    depending on the include_schema flag.
     Returns a list of dicts, each with system_prompt (merged), user, assistant.
     """
     log = logging.getLogger(__name__)
@@ -55,7 +56,7 @@ def load_raw_examples(path: Path) -> list[dict]:
 
     system_prompt = (data.get("system_prompt") or "").strip()
     schema = (data.get("schema") or "").strip()
-    if schema:
+    if include_schema and schema:
         system_prompt = system_prompt + "\n\n" + schema
     pairs = data.get("user_assistant_messages") or []
     return [
@@ -106,11 +107,15 @@ def main():
 
     log.info("Run ID: %s", run_id)
     log.info("Loading raw examples from %s", raw_path)
-    raw_examples = load_raw_examples(raw_path)
+    include_schema = cfg["training"].get("include_schema_in_training", True)
+    raw_examples = load_raw_examples(raw_path, include_schema=include_schema)
     if not raw_examples:
         log.error("No valid examples found.")
         return 1
-    log.info("  Loaded %s examples (system prompt includes schema from file).", len(raw_examples))
+    if include_schema:
+        log.info("  Loaded %s examples (system prompt includes schema from file).", len(raw_examples))
+    else:
+        log.info("  Loaded %s examples (system prompt WITHOUT schema).", len(raw_examples))
 
     # Convert each raw example to messages format (no override; prompt comes from file)
     messages_list = [raw_to_messages(r, system_content=None) for r in raw_examples]

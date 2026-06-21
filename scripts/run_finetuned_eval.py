@@ -35,6 +35,7 @@ def run_finetuned_eval():
 
     parser = argparse.ArgumentParser(description="Run fine-tuned model evaluation.")
     parser.add_argument("--config", type=Path, default=None, help="Path to config YAML")
+    parser.add_argument("--adapter-dir", type=Path, default=None, help="Override adapter path (e.g. output/<run_id>/adapter_rl to eval RL adapter)")
     args = parser.parse_args()
 
     setup_logging()
@@ -47,14 +48,20 @@ def run_finetuned_eval():
         return 1
 
     model_id = cfg["model_id"]
-    adapter_dir = cfg["adapter_dir"]
+    adapter_dir = args.adapter_dir if args.adapter_dir is not None else cfg["adapter_dir"]
+    if not adapter_dir.is_absolute():
+        adapter_dir = PROJECT_ROOT / adapter_dir
     val_path = cfg["data"]["val_path"]
     train_path = cfg["data"]["train_path"]
     training_data_path = cfg["data"].get("training_data_path")
     max_examples = cfg["eval"]["max_examples"]
     include_schema_in_eval = cfg["eval"].get("include_schema_in_eval", True)
     output_dir = cfg["output_dir"]
-    out_path = output_dir / "finetuned_outputs.md"
+    if args.adapter_dir is not None:
+        adapter_label = adapter_dir.name
+        out_path = output_dir / f"finetuned_outputs_{adapter_label}.md"
+    else:
+        out_path = output_dir / "finetuned_outputs.md"
 
     # When include_schema_in_eval is False, use system_prompt only (no schema) from training_data.json
     eval_system_prompt_no_schema = None
